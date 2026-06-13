@@ -73,21 +73,24 @@
     // 3. Ambil kembali HTML yang sudah diperbaiki
     const fixedHtmlContent = docWithBrokenLinks.documentElement.outerHTML;
 
-    // --- (Lanjutkan dengan pembuatan iframe lokal seperti sebelumnya) ---
+    // Hapus iframe lama jika ada
+    const container = document.getElementById('container');
+    container.innerHTML = '';
 
-    // Buat iframe lokal baru
+    // 4. Buat iframe baru menggunakan metode SRCDOC + Sandbox
     const iframe = document.createElement('iframe');
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
     
-    document.getElementById('container').appendChild(iframe);
+    // Memberikan izin eksekusi script tetapi membatasi deteksi top-domain
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+
+    // Memasukkan seluruh HTML langsung sebagai dokumen lokal iframe
+    // Kita lakukan escape tanda kutip agar tidak merusak atribut HTML
+    iframe.srcdoc = fixedHtmlContent;
     
-    // Tulis isi HTML yang sudah diperbaiki ke dalam iframe lokal
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(fixedHtmlContent);
-    doc.close();
+    container.appendChild(iframe);
 })
             .catch(error => {
                 document.getElementById('loading').innerText = "Gagal memuat: " + error.message;
