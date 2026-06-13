@@ -32,29 +32,20 @@
     <div id="container"></div>
 
     <script>
-        // 1. GANTI INI dengan URL Google Apps Script yang ingin kamu tembus
         const targetGasUrl = "https://script.google.com/macros/s/AKfycbwO9Bo1e5C2LWff4HTEz5V7Mp9bQPCQcomPmhZdbyVarcpWKTbfprgUYbgLeAZO_Y4_Bw/exec?page=admin"; 
-
-        // 2. Menggunakan public proxy gratis (AllOrigins) untuk membypass CORS & X-Frame
         const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(targetGasUrl);
 
         fetch(proxyUrl)
             .then(response => {
-                if (response.ok) return response.json();
-                throw new Error('Gagal mengambil data dari proxy.');
+                if (!response.ok) throw new Error('Proxy gagal merespons.');
+                // PERBAIKAN DI SINI: Gunakan .text(), bukan .json()
+                return response.text(); 
             })
-            .then(data => {
-                // Sembunyikan loading
+            .then(htmlContent => {
+                // Sembunyikan tulisan loading
                 document.getElementById('loading').style.display = 'none';
 
-                // 3. Mengambil mentahan HTML dari GAS
-                let rawHtml = data.contents;
-
-                // 4. DI SINI KAMU BISA MANIPULASI ISI HTML-NYA!
-                // Contoh: Menghapus script atau elemen warning tertentu jika kamu tahu ID/Class-nya
-                rawHtml = rawHtml.replace('id="warning-bar warning-banner-bar"', 'style="display:none;"');
-
-                // 5. Masukkan HTML yang sudah "bersih" ke dalam dokumen kita lewat Shadow DOM atau Iframe buatan
+                // Buat iframe lokal baru
                 const iframe = document.createElement('iframe');
                 iframe.style.width = '100%';
                 iframe.style.height = '100%';
@@ -62,14 +53,14 @@
                 
                 document.getElementById('container').appendChild(iframe);
                 
-                // Tulis ulang HTML ke dalam iframe lokal (ini legal karena origin-nya sekarang sama dengan GitHub-mu)
+                // Tulis isi HTML dari proxy ke dalam iframe lokal
                 const doc = iframe.contentWindow.document;
                 doc.open();
-                doc.write(rawHtml);
+                doc.write(htmlContent);
                 doc.close();
             })
             .catch(error => {
-                document.getElementById('loading').innerText = "Error: " + error.message;
+                document.getElementById('loading').innerText = "Gagal memuat: " + error.message;
                 console.error(error);
             });
     </script>
