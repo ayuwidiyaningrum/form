@@ -66,15 +66,27 @@
     // ==========================================
     // 3. TRIK PAMUNGKAS: HANCURKAN SKRIP WARDEN GOOGLE
     // ==========================================
+    // A. Buat elemen script baru untuk menyuntikkan objek 'goog' palsu ke dalam iframe
+    const mockGoogScript = docWithBrokenLinks.createElement('script');
+    mockGoogScript.innerHTML = `
+        window.goog = {
+            onload: function() { 
+                console.log('%c[Bypass] goog.onload() berhasil dilewati lewat objek palsu!', 'color: green; background: black;'); 
+            }
+        };
+    `;
+    // Taruh script palsu ini di bagian paling atas head agar dibaca duluan oleh browser
+    docWithBrokenLinks.head.insertBefore(mockGoogScript, docWithBrokenLinks.head.firstChild);
+
+    // B. Lanjutkan menghapus script pelindung asli bawaan Google
     const allScripts = docWithBrokenLinks.querySelectorAll('script');
     allScripts.forEach(script => {
         const src = script.getAttribute('src') || '';
         const innerCode = script.innerHTML || '';
 
-        // Jika script memuat warden_bin atau inisialisasi yang memblokir domain, kita hapus!
-        if (src.includes('warden') || innerCode.includes('wardeninit') || innerCode.includes('goog.onload')) {
+        if (src.includes('warden') || innerCode.includes('wardeninit')) {
             console.log('%c[Bypass] Menghapus skrip pelindung Google: ', 'color: yellow; background: black;', src || 'Inline Script');
-            script.remove(); // Hapus skrip keamanan dari dokumen
+            script.remove();
         }
     });
     // ==========================================
