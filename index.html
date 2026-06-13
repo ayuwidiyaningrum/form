@@ -102,9 +102,25 @@
     // ==========================================
 
     // 4. Ambil kembali HTML yang sudah "dibersihkan"
-    const fixedHtmlContent = docWithBrokenLinks.documentElement.outerHTML;
+    // 4. Ambil kembali HTML yang sudah "dibersihkan"
+    let fixedHtmlContent = docWithBrokenLinks.documentElement.outerHTML;
 
-    // 5. Tampilkan ke dalam iframe lokal biasa (tanpa sandbox ketat agar fitur aslinya jalan)
+    // Tambahkan CSS paksa di dalam HTML sebelum masuk iframe agar semua elemen yang tadinya disembunyikan Google dipaksa muncul
+    const forceShowCss = `
+        <style>
+            body, html, div, iframe, form { 
+                display: block !important; 
+                visibility: visible !important; 
+                opacity: 1 !important; 
+            }
+            .goog-inline-block, .sandbox-content-container { 
+                display: block !important; 
+            }
+        </style>
+    `;
+    fixedHtmlContent = fixedHtmlContent.replace('</head>', forceShowCss + '</head>');
+
+    // 5. Tampilkan ke dalam iframe lokal biasa
     const container = document.getElementById('container');
     container.innerHTML = '';
 
