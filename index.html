@@ -42,55 +42,61 @@
                 return response.text(); 
             })
             .then(htmlContent => {
-    // Sembunyikan tulisan loading
     document.getElementById('loading').style.display = 'none';
 
-    // 1. Perbaikan Kunci: Mengubah konten HTML mentah menjadi Objek Dokumen agar bisa dimanipulasi
+    // 1. Ubah konten HTML mentah menjadi Objek Dokumen
     const parser = new DOMParser();
     const docWithBrokenLinks = parser.parseFromString(htmlContent, 'text/html');
 
-    // 2. Perbaikan Kunci: Cari semua link CSS, Script, dan Image, lalu ubah URL-nya menjadi absolut
-    // Ini memastikan browser mencari file Google di Google, bukan di domain GitHub-mu
+    // 2. Perbaiki semua URL relatif menjadi absolut agar CSS & JS biasa tidak 404
     const makeLinksAbsolute = (attributeName, tagName) => {
         const elements = docWithBrokenLinks.querySelectorAll(tagName);
         elements.forEach(el => {
             const relativeUrl = el.getAttribute(attributeName);
-            // Periksa jika URL-nya ada dan bersifat relatif (tidak diawali dengan 'http' atau '//')
             if (relativeUrl && !relativeUrl.startsWith('http') && !relativeUrl.startsWith('//')) {
-                // Tembakkan ke URL absolut Google Script yang benar
-                // Ganti URL ini jika URL GAS utamamu berbeda
                 const baseUrl = "https://script.google.com";
                 el.setAttribute(attributeName, baseUrl + relativeUrl);
             }
         });
     };
+    makeLinksAbsolute('href', 'link');
+    makeLinksAbsolute('src', 'script');
+    makeLinksAbsolute('src', 'img');
 
-    // Jalankan fungsi perbaikan untuk tag yang paling penting
-    makeLinksAbsolute('href', 'link');    // Perbaiki link CSS
-    makeLinksAbsolute('src', 'script');   // Perbaiki link JavaScript
-    makeLinksAbsolute('src', 'img');      // Perbaiki link Gambar
+    // ==========================================
+    // 3. TRIK PAMUNGKAS: HANCURKAN SKRIP WARDEN GOOGLE
+    // ==========================================
+    const allScripts = docWithBrokenLinks.querySelectorAll('script');
+    allScripts.forEach(script => {
+        const src = script.getAttribute('src') || '';
+        const innerCode = script.innerHTML || '';
 
-    // 3. Ambil kembali HTML yang sudah diperbaiki
+        // Jika script memuat warden_bin atau inisialisasi yang memblokir domain, kita hapus!
+        if (src.includes('warden') || innerCode.includes('wardeninit') || innerCode.includes('goog.onload')) {
+            console.log('%c[Bypass] Menghapus skrip pelindung Google: ', 'color: yellow; background: black;', src || 'Inline Script');
+            script.remove(); // Hapus skrip keamanan dari dokumen
+        }
+    });
+    // ==========================================
+
+    // 4. Ambil kembali HTML yang sudah "dibersihkan"
     const fixedHtmlContent = docWithBrokenLinks.documentElement.outerHTML;
 
-    // Hapus iframe lama jika ada
+    // 5. Tampilkan ke dalam iframe lokal biasa (tanpa sandbox ketat agar fitur aslinya jalan)
     const container = document.getElementById('container');
     container.innerHTML = '';
 
-    // 4. Buat iframe baru menggunakan metode SRCDOC + Sandbox
     const iframe = document.createElement('iframe');
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
     
-    // Memberikan izin eksekusi script tetapi membatasi deteksi top-domain
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
-
-    // Memasukkan seluruh HTML langsung sebagai dokumen lokal iframe
-    // Kita lakukan escape tanda kutip agar tidak merusak atribut HTML
-    iframe.srcdoc = fixedHtmlContent;
-    
     container.appendChild(iframe);
+    
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(fixedHtmlContent);
+    doc.close();
 })
             .catch(error => {
                 document.getElementById('loading').innerText = "Gagal memuat: " + error.message;
