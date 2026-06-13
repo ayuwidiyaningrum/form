@@ -36,7 +36,7 @@
         const targetGasUrl = "https://script.google.com/macros/s/AKfycbwO9Bo1e5C2LWff4HTEz5V7Mp9bQPCQcomPmhZdbyVarcpWKTbfprgUYbgLeAZO_Y4_Bw/exec?page=admin"; 
 
         // 2. Menggunakan public proxy gratis (AllOrigins) untuk membypass CORS & X-Frame
-        const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetGasUrl);
+        const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(targetGasUrl);
 
         fetch(proxyUrl)
             .then(response => {
