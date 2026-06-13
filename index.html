@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bypass GAS Frame Protection</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .loading {
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="loading">Memuat konten tanpa proteksi...</div>
+    <div id="container"></div>
+
+    <script>
+        // 1. GANTI INI dengan URL Google Apps Script yang ingin kamu tembus
+        const targetGasUrl = "https://script.google.com/macros/s/AKfycbwO9Bo1e5C2LWff4HTEz5V7Mp9bQPCQcomPmhZdbyVarcpWKTbfprgUYbgLeAZO_Y4_Bw/exec?page=admin"; 
+
+        // 2. Menggunakan public proxy gratis (AllOrigins) untuk membypass CORS & X-Frame
+        const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetGasUrl);
+
+        fetch(proxyUrl)
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('Gagal mengambil data dari proxy.');
+            })
+            .then(data => {
+                // Sembunyikan loading
+                document.getElementById('loading').style.display = 'none';
+
+                // 3. Mengambil mentahan HTML dari GAS
+                let rawHtml = data.contents;
+
+                // 4. DI SINI KAMU BISA MANIPULASI ISI HTML-NYA!
+                // Contoh: Menghapus script atau elemen warning tertentu jika kamu tahu ID/Class-nya
+                rawHtml = rawHtml.replace('id="warning-bar warning-banner-bar"', 'style="display:none;"');
+
+                // 5. Masukkan HTML yang sudah "bersih" ke dalam dokumen kita lewat Shadow DOM atau Iframe buatan
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                
+                document.getElementById('container').appendChild(iframe);
+                
+                // Tulis ulang HTML ke dalam iframe lokal (ini legal karena origin-nya sekarang sama dengan GitHub-mu)
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(rawHtml);
+                doc.close();
+            })
+            .catch(error => {
+                document.getElementById('loading').innerText = "Error: " + error.message;
+                console.error(error);
+            });
+    </script>
+</body>
+</html>
