@@ -69,16 +69,26 @@
     // A. Buat elemen script baru untuk menyuntikkan objek 'goog' palsu ke dalam iframe
     const mockGoogScript = docWithBrokenLinks.createElement('script');
     mockGoogScript.innerHTML = `
-        window.goog = {
-            onload: function() { 
-                console.log('%c[Bypass] goog.onload() berhasil dilewati lewat objek palsu!', 'color: green; background: black;'); 
+        // Kita buat fungsi kosong yang aman
+        const blankFunction = function() { return blankProxy; };
+        
+        // Proxy ini akan menangkap semua panggilan fungsi bertingkat (seperti goog.something.init())
+        const blankProxy = new Proxy(blankFunction, {
+            get: function(target, prop) {
+                return blankProxy;
             }
+        });
+
+        // Daftarkan objek goog dan fungsi onload-nya menggunakan proxy sakti tadi
+        window.goog = blankProxy;
+        window.goog.onload = function() {
+            console.log('%c[Bypass] Seluruh objek goog (termasuk .init) berhasil dilewati lewat Proxy!', 'color: green; background: black;');
         };
     `;
-    // Taruh script palsu ini di bagian paling atas head agar dibaca duluan oleh browser
+    // Taruh script palsu ini di bagian paling atas head agar dibaca duluan
     docWithBrokenLinks.head.insertBefore(mockGoogScript, docWithBrokenLinks.head.firstChild);
 
-    // B. Lanjutkan menghapus script pelindung asli bawaan Google
+    // B. Lanjutkan menghapus script pelindung asli bawaan Google (Tetap sama seperti sebelumnya)
     const allScripts = docWithBrokenLinks.querySelectorAll('script');
     allScripts.forEach(script => {
         const src = script.getAttribute('src') || '';
