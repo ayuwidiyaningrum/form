@@ -42,23 +42,53 @@
                 return response.text(); 
             })
             .then(htmlContent => {
-                // Sembunyikan tulisan loading
-                document.getElementById('loading').style.display = 'none';
+    // Sembunyikan tulisan loading
+    document.getElementById('loading').style.display = 'none';
 
-                // Buat iframe lokal baru
-                const iframe = document.createElement('iframe');
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.border = 'none';
-                
-                document.getElementById('container').appendChild(iframe);
-                
-                // Tulis isi HTML dari proxy ke dalam iframe lokal
-                const doc = iframe.contentWindow.document;
-                doc.open();
-                doc.write(htmlContent);
-                doc.close();
-            })
+    // 1. Perbaikan Kunci: Mengubah konten HTML mentah menjadi Objek Dokumen agar bisa dimanipulasi
+    const parser = new DOMParser();
+    const docWithBrokenLinks = parser.parseFromString(htmlContent, 'text/html');
+
+    // 2. Perbaikan Kunci: Cari semua link CSS, Script, dan Image, lalu ubah URL-nya menjadi absolut
+    // Ini memastikan browser mencari file Google di Google, bukan di domain GitHub-mu
+    const makeLinksAbsolute = (attributeName, tagName) => {
+        const elements = docWithBrokenLinks.querySelectorAll(tagName);
+        elements.forEach(el => {
+            const relativeUrl = el.getAttribute(attributeName);
+            // Periksa jika URL-nya ada dan bersifat relatif (tidak diawali dengan 'http' atau '//')
+            if (relativeUrl && !relativeUrl.startsWith('http') && !relativeUrl.startsWith('//')) {
+                // Tembakkan ke URL absolut Google Script yang benar
+                // Ganti URL ini jika URL GAS utamamu berbeda
+                const baseUrl = "https://script.google.com";
+                el.setAttribute(attributeName, baseUrl + relativeUrl);
+            }
+        });
+    };
+
+    // Jalankan fungsi perbaikan untuk tag yang paling penting
+    makeLinksAbsolute('href', 'link');    // Perbaiki link CSS
+    makeLinksAbsolute('src', 'script');   // Perbaiki link JavaScript
+    makeLinksAbsolute('src', 'img');      // Perbaiki link Gambar
+
+    // 3. Ambil kembali HTML yang sudah diperbaiki
+    const fixedHtmlContent = docWithBrokenLinks.documentElement.outerHTML;
+
+    // --- (Lanjutkan dengan pembuatan iframe lokal seperti sebelumnya) ---
+
+    // Buat iframe lokal baru
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    
+    document.getElementById('container').appendChild(iframe);
+    
+    // Tulis isi HTML yang sudah diperbaiki ke dalam iframe lokal
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(fixedHtmlContent);
+    doc.close();
+})
             .catch(error => {
                 document.getElementById('loading').innerText = "Gagal memuat: " + error.message;
                 console.error(error);
